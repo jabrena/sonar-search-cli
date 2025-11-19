@@ -26,4 +26,4 @@ jobs:
         with:
           name: churrera-cli-${{ steps.get_version.outputs.VERSION }}.jar
           path: |
-            ./churrera-cli/target/churrera-cli-${{ steps.get_version.outputs.VERSION }}.jar
+            ./target/sonar-search-${{ steps.get_version.outputs.VERSION }}.jar
