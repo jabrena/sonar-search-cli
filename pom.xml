@@ -12,8 +12,11 @@
     <url>https://github.com/jabrena/sonar-search-cli</url>
 
     <properties>
+        <!-- Core build properties -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>25</java.version>
+        <maven.version>3.9.10</maven.version>
 
         <jcolor.version>5.5.1</jcolor.version>
         <jfiglet.version>0.0.9</jfiglet.version>
