@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>info.jab.sonar</groupId>
+    <artifactId>sonar-search</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+
+    <name>sonar-search</name>
+    <url>https://github.com/jabrena/sonar-search-cli</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.release>25</java.release>
+
+        <jcolor.version>5.5.1</jcolor.version>
+        <jfiglet.version>0.0.9</jfiglet.version>
+        <dotenv.version>3.2.0</dotenv.version>
+        <picocli.version>4.7.7</picocli.version>
+        <junit-bom.version>5.11.0</junit-bom.version>
+        <wiremock.version>3.3.1</wiremock.version>
+        <assertj.version>3.25.1</assertj.version>
+
+        <maven-plugins-git-commit-id.version>4.9.10</maven-plugins-git-commit-id.version>
+        <maven-plugin-shade.version>3.5.1</maven-plugin-shade.version>
+        <maven-plugin-compiler.version>3.14.1</maven-plugin-compiler.version>
+        <maven-plugin-surefire.version>3.5.4</maven-plugin-surefire.version>
+        <maven-plugin-failsafe.version>3.5.4</maven-plugin-failsafe.version>
+        <maven-plugin-enforcer.version>3.6.2</maven-plugin-enforcer.version>
+        <extra-enforcer-rules.version>1.11.0</extra-enforcer-rules.version>
+        <maven-plugin-versions.version>2.19.1</maven-plugin-versions.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.github.lalyos</groupId>
+            <artifactId>jfiglet</artifactId>
+            <version>${jfiglet.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.diogonunes</groupId>
+            <artifactId>JColor</artifactId>
+            <version>${jcolor.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>${dotenv.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>${picocli.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Optionally: parameterized tests support -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>${wiremock.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven-plugin-enforcer.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>extra-enforcer-rules</artifactId>
+                        <version>${extra-enforcer-rules.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <rules>
+                        <banCircularDependencies />
+                        <dependencyConvergence />
+                        <banDuplicatePomDependencyVersions />
+                        <requireMavenVersion>
+                            <version>${maven.version}</version>
+                        </requireMavenVersion>
+                        <requireJavaVersion>
+                            <version>${java.version}</version>
+                        </requireJavaVersion>
+                        <bannedDependencies>
+                            <excludes>
+                                <exclude>org.projectlombok:lombok</exclude>
+                            </excludes>
+                        </bannedDependencies>
+                    </rules>
+                    <fail>true</fail>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-plugin-compiler.version}</version>
+                <configuration>
+                    <compilerArgument>-Xlint:all</compilerArgument><!-- -Werror -->
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>${maven-plugins-git-commit-id.version}</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>
+                        ${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <commitIdGenerationMode>full</commitIdGenerationMode>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-plugin-surefire.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven-plugin-failsafe.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/*Test.java</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-plugin-shade.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>info.jab.sonar.cli.SonarSearchCLI</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>${maven-plugin-versions.version}</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

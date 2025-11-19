@@ -1,0 +1,29 @@
+name: CI Builds
+
+on: [push]
+
+jobs:
+  run:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true  # Fetches all submodules
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'graalvm' # See 'Supported distributions' for available options
+          java-version: '25'
+      - name: Maven build
+        run: ./mvnw --batch-mode --no-transfer-progress test verify --file pom.xml
+
+      - name: Get Maven project version
+        id: get_version
+        run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v5
+        with:
+          name: churrera-cli-${{ steps.get_version.outputs.VERSION }}.jar
+          path: |
+            ./churrera-cli/target/churrera-cli-${{ steps.get_version.outputs.VERSION }}.jar
