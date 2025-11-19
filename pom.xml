@@ -24,7 +24,7 @@
         <picocli.version>4.7.7</picocli.version>
         <junit-bom.version>6.0.1</junit-bom.version>
         <wiremock.version>3.13.2</wiremock.version>
-        <assertj.version>3.25.1</assertj.version>
+        <assertj.version>3.27.6</assertj.version>
 
         <maven-plugins-git-commit-id.version>4.9.10</maven-plugins-git-commit-id.version>
         <maven-plugin-shade.version>3.6.1</maven-plugin-shade.version>
