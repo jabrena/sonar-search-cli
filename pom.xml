@@ -27,7 +27,7 @@
         <assertj.version>3.25.1</assertj.version>
 
         <maven-plugins-git-commit-id.version>4.9.10</maven-plugins-git-commit-id.version>
-        <maven-plugin-shade.version>3.5.1</maven-plugin-shade.version>
+        <maven-plugin-shade.version>3.6.1</maven-plugin-shade.version>
         <maven-plugin-compiler.version>3.14.1</maven-plugin-compiler.version>
         <maven-plugin-surefire.version>3.5.4</maven-plugin-surefire.version>
         <maven-plugin-failsafe.version>3.5.4</maven-plugin-failsafe.version>
