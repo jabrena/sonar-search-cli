@@ -28,6 +28,6 @@ jobs:
       - name: Upload jar
         uses: actions/upload-artifact@v5
         with:
-          name: churrera-cli-${{ steps.get_version.outputs.VERSION }}.jar
+          name: sonar-search-${{ steps.get_version.outputs.VERSION }}.jar
           path: |
             ./target/sonar-search-${{ steps.get_version.outputs.VERSION }}.jar
