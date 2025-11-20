@@ -19,19 +19,24 @@ import static org.assertj.core.api.Assertions.*;
 @DisplayName("SonarApiKeyResolver Tests")
 class SonarApiKeyResolverTest {
 
-    private String originalApiKey;
     private String originalWorkingDir;
+    private String originalSystemProperty;
 
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() throws Exception {
-        // Save original environment variable
-        originalApiKey = System.getenv(SonarApiKeyResolver.SONAR_TOKEN);
-
         // Save original working directory
         originalWorkingDir = System.getProperty("user.dir");
+        originalSystemProperty = System.getProperty(SonarApiKeyResolver.SONAR_TOKEN);
+
+        // Point working directory to a temp folder so real .env is untouched
+        File isolatedWorkingDir = tempDir.toFile();
+        if (!isolatedWorkingDir.exists()) {
+            isolatedWorkingDir.mkdirs();
+        }
+        System.setProperty("user.dir", isolatedWorkingDir.getAbsolutePath());
 
         // Clear environment variable for clean tests
         clearEnvironmentVariable();
@@ -39,11 +44,10 @@ class SonarApiKeyResolverTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        // Restore original environment variable
-        if (originalApiKey != null) {
-            setEnvironmentVariable(originalApiKey);
+        if (originalSystemProperty != null) {
+            System.setProperty(SonarApiKeyResolver.SONAR_TOKEN, originalSystemProperty);
         } else {
-            clearEnvironmentVariable();
+            System.clearProperty(SonarApiKeyResolver.SONAR_TOKEN);
         }
 
         // Restore original working directory
@@ -421,16 +425,9 @@ class SonarApiKeyResolverTest {
 
     // Helper methods
 
-    private void setEnvironmentVariable(String value) {
-        // Note: This is a simplified approach for testing
-        // In a real test environment, you might need to use a test framework
-        // that supports environment variable manipulation
-        System.setProperty(SonarApiKeyResolver.SONAR_TOKEN, value);
-    }
-
     private void clearEnvironmentVariable() {
-        // Note: This is a simplified approach for testing
-        System.clearProperty(SonarApiKeyResolver.SONAR_TOKEN);
+        // Use system property override to isolate tests from host environment variables
+        System.setProperty(SonarApiKeyResolver.SONAR_TOKEN, "");
     }
 
 }

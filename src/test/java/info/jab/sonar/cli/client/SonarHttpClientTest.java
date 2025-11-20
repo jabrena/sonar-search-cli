@@ -60,7 +60,7 @@ class SonarHttpClientTest {
                 .withBodyFile("bugs.json")));
 
         // Act
-        String result = client.searchIssues(apiKey, componentKey, issueType);
+        String result = client.getIssues(apiKey, componentKey, issueType);
 
         // Assert
         assertThat(result).isNotNull();
@@ -89,7 +89,7 @@ class SonarHttpClientTest {
                 .withBodyFile("code-smells.json")));
 
         // Act
-        String result = client.searchIssues(apiKey, componentKey, issueType);
+        String result = client.getIssues(apiKey, componentKey, issueType);
 
         // Assert
         assertThat(result).isNotNull();
@@ -118,7 +118,7 @@ class SonarHttpClientTest {
                 .withBodyFile("vulnerability.json")));
 
         // Act
-        String result = client.searchIssues(apiKey, componentKey, issueType);
+        String result = client.getIssues(apiKey, componentKey, issueType);
 
         // Assert
         assertThat(result).isNotNull();
@@ -142,7 +142,7 @@ class SonarHttpClientTest {
                 .withBody("Unauthorized")));
 
         // Act & Assert
-        assertThatThrownBy(() -> client.searchIssues(apiKey, componentKey, issueType))
+        assertThatThrownBy(() -> client.getIssues(apiKey, componentKey, issueType))
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("HTTP 401");
         verify(getRequestedFor(urlPathEqualTo("/api/issues/search")));
@@ -165,12 +165,72 @@ class SonarHttpClientTest {
                 .withBodyFile("bugs.json")));
 
         // Act
-        String result = client.searchIssues(apiKey, componentKey, issueType);
+        String result = client.getIssues(apiKey, componentKey, issueType);
 
         // Assert
         assertThat(result).isNotNull();
         verify(getRequestedFor(urlPathEqualTo("/api/issues/search"))
             .withQueryParam("types", equalTo(typesParam)));
     }
-}
 
+    @Test
+    void testValidateToken_Valid() throws Exception {
+        String apiKey = "valid-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\"valid\": true}")));
+
+        boolean result = client.validateToken(apiKey);
+
+        assertThat(result).isTrue();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    void testValidateToken_Invalid() throws Exception {
+        String apiKey = "invalid-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(401)
+                .withBody("Unauthorized")));
+
+        boolean result = client.validateToken(apiKey);
+
+        assertThat(result).isFalse();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    void testGetHotspots() throws Exception {
+        // Arrange
+        String projectKey = "jabrena_churrera-cli";
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/hotspots/search"))
+            .withQueryParam("projectKey", equalTo(projectKey))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBodyFile("hotspots.json")));
+
+        // Act
+        String result = client.getHotspots(apiKey, projectKey);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).contains("\"total\": 1");
+        assertThat(result).contains("\"hotspots\"");
+        assertThat(result).contains("\"securityCategory\": \"dos\"");
+        assertThat(result).contains("\"vulnerabilityProbability\": \"MEDIUM\"");
+        verify(getRequestedFor(urlPathEqualTo("/api/hotspots/search"))
+            .withQueryParam("projectKey", equalTo(projectKey)));
+    }
+
+}
