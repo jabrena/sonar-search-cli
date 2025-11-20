@@ -8,6 +8,8 @@ import info.jab.sonar.cli.util.SonarApiKeyResolver;
 import com.diogonunes.jcolor.Attribute;
 import static com.diogonunes.jcolor.Ansi.colorize;
 import com.github.lalyos.jfiglet.FigletFont;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -25,19 +27,15 @@ import picocli.CommandLine;
 )
 public class SonarSearchCLI implements Runnable {
 
-    @CommandLine.Option(
-        names = {"--type", "-t"},
-        description = "Issue type: ${COMPLETION-CANDIDATES}",
-        required = true
-    )
-    private IssueType type;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @CommandLine.Option(
-        names = {"--component", "-c"},
-        description = "Component key (e.g., jabrena_sonar-search-cli)",
+        names = { "--project", "-p" },
+        description = "Project key (e.g., jabrena_sonar-search-cli)",
         required = true
     )
-    private String componentKey;
+    private String projectKey;
+
 
     @CommandLine.Option(
         names = {"--quiet", "-q"},
@@ -45,6 +43,20 @@ public class SonarSearchCLI implements Runnable {
         defaultValue = "false"
     )
     private boolean quiet;
+
+    @CommandLine.Option(
+        names = { "--issues", "-i" },
+        description = "Issue type: ${COMPLETION-CANDIDATES}",
+        required = false
+    )
+    private IssueType type;
+
+    @CommandLine.Option(
+        names = {"--hotspots"},
+        description = "Get security hotspots",
+        defaultValue = "false"
+    )
+    private boolean hotspots;
 
     // Dependencies
     private final SonarApiKeyResolver apiKeyResolver;
@@ -69,9 +81,41 @@ public class SonarSearchCLI implements Runnable {
     @Override
     public void run() {
         try {
+            // Validate that either issues or hotspots is selected, but not both
+            if (hotspots && type != null) {
+                throw new RuntimeException("Cannot use --hotspots with --issues. Choose either --hotspots or --issues");
+            }
+            if (!hotspots && type == null) {
+                throw new RuntimeException("Must provide either --issues (with type) or --hotspots");
+            }
+            // If issues mode (type != null), type is required (enforced by enum when --issues is provided)
+
             String apiKey = apiKeyResolver.resolveApiKey();
-            String response = sonarHttpClient.searchIssues(apiKey, componentKey, type);
-            System.out.println(response);
+            boolean tokenValid = sonarHttpClient.validateToken(apiKey);
+            if (!tokenValid) {
+                throw new RuntimeException("SONAR_TOKEN validation failed");
+            }
+            System.out.println("✓ SONAR_TOKEN validated");
+            System.out.println();
+            System.out.println();
+
+            String response;
+            if (hotspots) {
+                response = sonarHttpClient.getHotspots(apiKey, projectKey);
+            } else {
+                response = sonarHttpClient.getIssues(apiKey, projectKey, type);
+            }
+
+            // Pretty-print JSON
+            try {
+                JsonNode jsonNode = OBJECT_MAPPER.readTree(response);
+                String prettyJson = OBJECT_MAPPER.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(jsonNode);
+                System.out.println(prettyJson);
+            } catch (Exception e) {
+                // If JSON parsing fails, output raw response
+                System.out.println(response);
+            }
         } catch (Exception e) {
             System.err.println("Error executing search: " + e.getMessage());
             System.exit(1);

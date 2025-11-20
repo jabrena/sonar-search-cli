@@ -37,29 +37,20 @@ public class SonarApiKeyResolver {
      */
     private Optional<String> resolveFromEnvFile() {
         try {
+            Dotenv dotenv = Dotenv.configure()
+                .directory(System.getProperty("user.dir"))
+                .ignoreIfMalformed()
+                .ignoreIfMissing()
+                .load();
 
-            try {
-                Dotenv dotenv = Dotenv.configure()
-                    .directory(".")
-                    .ignoreIfMalformed()
-                    .ignoreIfMissing()
-                    .load();
-
-                String envApiKey = dotenv.get(SONAR_TOKEN);
-                if (envApiKey != null && !envApiKey.trim().isEmpty()) {
-                    return Optional.of(envApiKey.trim());
-                }
-            } catch (Exception e) {
-                System.out.println("⚠️  Error loading .env : " + e.getMessage());
-                // Continue to next path
-                return Optional.empty();
+            String envApiKey = dotenv.get(SONAR_TOKEN);
+            if (envApiKey != null && !envApiKey.trim().isEmpty()) {
+                return Optional.of(envApiKey.trim());
             }
-
-            return Optional.empty();
         } catch (Exception e) {
             System.err.println("⚠️  Could not read .env file: " + e.getMessage());
-            return Optional.empty();
         }
+        return Optional.empty();
     }
 
     /**
@@ -67,8 +58,15 @@ public class SonarApiKeyResolver {
      * Returns Optional.empty() if not found.
      */
     private Optional<String> resolveFromSystemEnvironment() {
+        String systemPropertyValue = System.getProperty(SONAR_TOKEN);
+        if (systemPropertyValue != null) {
+            String trimmed = systemPropertyValue.trim();
+            return trimmed.isEmpty() ? Optional.empty() : Optional.of(trimmed);
+        }
+
         return Optional.ofNullable(System.getenv(SONAR_TOKEN))
             .filter(key -> !key.trim().isEmpty())
             .map(String::trim);
     }
+
 }
