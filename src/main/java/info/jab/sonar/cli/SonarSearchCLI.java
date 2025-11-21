@@ -95,9 +95,11 @@ public class SonarSearchCLI implements Runnable {
             if (!tokenValid) {
                 throw new RuntimeException("SONAR_TOKEN validation failed");
             }
-            System.out.println("✓ SONAR_TOKEN validated");
-            System.out.println();
-            System.out.println();
+            if (!quiet) {
+                System.out.println("✓ SONAR_TOKEN validated");
+                System.out.println();
+                System.out.println();
+            }
 
             String response;
             if (hotspots) {

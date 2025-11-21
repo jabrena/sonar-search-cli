@@ -27,12 +27,12 @@ jbang sonar-search@jabrena --project jabrena_churrera-cli --hotspots --quiet >> 
 # In local
 ./mvnw clean package
 
-java -jar target/sonar-search-0.1.0.jar --help
-java -jar target/sonar-search-0.1.0.jar --project jabrena_churrera-cli --issues BUG
-java -jar target/sonar-search-0.1.0.jar --project jabrena_churrera-cli --issues BUG --quiet >> bugs.json
-java -jar target/sonar-search-0.1.0.jar --project jabrena_churrera-cli --issues CODE_SMELL --quiet >> code-smells.json
-java -jar target/sonar-search-0.1.0.jar --project jabrena_churrera-cli --issues VULNERABILITY --quiet  >> vulnerabilities.json
-java -jar target/sonar-search-0.1.0.jar --project jabrena_churrera-cli --hotspots --quiet >> hotspots.json
+java -jar target/sonar-search-0.2.0-SNAPSHOT.jar --help
+java -jar target/sonar-search-0.2.0-SNAPSHOT.jar --project jabrena_churrera-cli --issues BUG
+java -jar target/sonar-search-0.2.0-SNAPSHOT.jar --project jabrena_churrera-cli --issues BUG --quiet >> bugs.json
+java -jar target/sonar-search-0.2.0-SNAPSHOT.jar --project jabrena_churrera-cli --issues CODE_SMELL --quiet >> code-smells.json
+java -jar target/sonar-search-0.2.0-SNAPSHOT.jar --project jabrena_churrera-cli --issues VULNERABILITY --quiet  >> vulnerabilities.json
+java -jar target/sonar-search-0.2.0-SNAPSHOT.jar --project jabrena_churrera-cli --hotspots --quiet >> hotspots.json
 ```
 
 ## Reference
