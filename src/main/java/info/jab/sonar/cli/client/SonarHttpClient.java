@@ -1,8 +1,5 @@
 package info.jab.sonar.cli.client;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import info.jab.sonar.cli.model.IssueType;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -10,49 +7,39 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 
 /**
- * HTTP client for interacting with SonarCloud API.
+ * HTTP client for sending requests to SonarCloud API.
+ * This class is responsible only for HTTP communication.
  */
 public class SonarHttpClient {
 
-    private static final String SONARCLOUD_BASE_URL = "https://sonarcloud.io";
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final HttpClient httpClient;
-    private final String baseUrl;
 
     public SonarHttpClient() {
         this.httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
-        this.baseUrl = SONARCLOUD_BASE_URL;
     }
 
     /**
-     * Constructor for testing that allows specifying a custom base URL.
+     * Constructor for testing that allows specifying a custom HTTP client.
      *
      * @param httpClient The HTTP client to use
-     * @param baseUrl The base URL for the API (e.g., http://localhost:8080 for WireMock)
      */
-    public SonarHttpClient(HttpClient httpClient, String baseUrl) {
+    public SonarHttpClient(HttpClient httpClient) {
         this.httpClient = httpClient;
-        this.baseUrl = baseUrl;
     }
 
     /**
-     * Gets issues from SonarCloud.
+     * Sends a GET request to the specified URI with the provided API key.
      *
+     * @param uri The URI to send the request to
      * @param apiKey The SonarCloud API key
-     * @param componentKey The component key to search for
-     * @param issueType The issue type enum (BUG, CODE_SMELL, VULNERABILITY, or ALL)
      * @return The JSON response body as a string
      * @throws Exception if the request fails or returns a non-200 status code
      */
-    public String getIssues(String apiKey, String componentKey, IssueType issueType) throws Exception {
-        String types = issueType.toApiFormat();
-        String url = String.format("%s/api/issues/search?componentKeys=%s&types=%s",
-            baseUrl, componentKey, types);
-
+    public String get(URI uri, String apiKey) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
+            .uri(uri)
             .header("Authorization", "Bearer " + apiKey)
             .GET()
             .timeout(Duration.ofSeconds(30))
@@ -70,85 +57,30 @@ public class SonarHttpClient {
     }
 
     /**
-     * Searches for security hotspots in SonarCloud.
+     * Sends a GET request and returns the response with status code and body.
+     * This method does not throw exceptions for non-200 status codes.
      *
+     * @param uri The URI to send the request to
      * @param apiKey The SonarCloud API key
-     * @param projectKey The project key to search for
-     * @return The JSON response body as a string
-     * @throws Exception if the request fails or returns a non-200 status code
+     * @return A Response object containing status code and body
+     * @throws Exception if the request fails for network/connection reasons
      */
-    public String getHotspots(String apiKey, String projectKey) throws Exception {
-        String url = String.format("%s/api/hotspots/search?projectKey=%s",
-            baseUrl, projectKey);
-
+    public Response getWithStatus(URI uri, String apiKey) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
+            .uri(uri)
             .header("Authorization", "Bearer " + apiKey)
             .GET()
             .timeout(Duration.ofSeconds(30))
             .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() == 200) {
-            return response.body();
-        } else {
-            throw new RuntimeException(
-                String.format("Error: HTTP %d - %s", response.statusCode(), response.body())
-            );
-        }
+        return new Response(response.statusCode(), response.body());
     }
 
     /**
-     * Validates the provided SonarCloud token.
-     *
-     * @param apiKey The SonarCloud API key
-     * @return true if the token is valid, false otherwise
-     * @throws Exception if the request fails for unexpected reasons
+     * Response object containing HTTP status code and body.
      */
-    public boolean validateToken(String apiKey) throws Exception {
-        String url = String.format("%s/api/authentication/validate", baseUrl);
-
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("Authorization", "Bearer " + apiKey)
-            .GET()
-            .timeout(Duration.ofSeconds(30))
-            .build();
-
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        int statusCode = response.statusCode();
-        String body = response.body();
-
-        if (statusCode == 200) {
-            return parseValidationResponse(body, true);
-        }
-        if (statusCode == 401) {
-            return parseValidationResponse(body, false);
-        }
-
-        throw new RuntimeException(
-            String.format("Error validating token: HTTP %d - %s", statusCode, body)
-        );
-    }
-
-    private boolean parseValidationResponse(String responseBody, boolean defaultValue) {
-        if (responseBody == null || responseBody.isBlank()) {
-            return defaultValue;
-        }
-
-        try {
-            ValidationResponse validationResponse =
-                OBJECT_MAPPER.readValue(responseBody, ValidationResponse.class);
-            Boolean valid = validationResponse.valid();
-            return valid != null ? valid : defaultValue;
-        } catch (Exception e) {
-            return defaultValue;
-        }
-    }
-
-    private record ValidationResponse(@JsonProperty("valid") Boolean valid) {
+    public record Response(int statusCode, String body) {
     }
 }
 

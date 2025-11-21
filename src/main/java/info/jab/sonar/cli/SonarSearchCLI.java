@@ -1,7 +1,10 @@
 package info.jab.sonar.cli;
 
-import info.jab.sonar.cli.client.SonarHttpClient;
-import info.jab.sonar.cli.model.IssueType;
+import info.jab.sonar.cli.model.Issue;
+import info.jab.sonar.cli.model.Query;
+import info.jab.sonar.cli.model.Severity;
+import info.jab.sonar.cli.model.Status;
+import info.jab.sonar.cli.service.SonarService;
 import info.jab.sonar.cli.util.GitInfo;
 import info.jab.sonar.cli.util.SonarApiKeyResolver;
 
@@ -32,7 +35,7 @@ public class SonarSearchCLI implements Runnable {
     @CommandLine.Option(
         names = { "--project", "-p" },
         description = "Project key (e.g., jabrena_sonar-search-cli)",
-        required = true
+        required = false
     )
     private String projectKey;
 
@@ -45,53 +48,144 @@ public class SonarSearchCLI implements Runnable {
     private boolean quiet;
 
     @CommandLine.Option(
-        names = { "--issues", "-i" },
-        description = "Issue type: ${COMPLETION-CANDIDATES}",
-        required = false
+        names = { "--query" },
+        description = "Query type: ${COMPLETION-CANDIDATES}",
+        required = false,
+        converter = QueryConverter.class
     )
-    private IssueType type;
+    private Query query;
+
+    /**
+     * Simple converter that delegates to Query.from().
+     */
+    private static class QueryConverter implements CommandLine.ITypeConverter<Query> {
+        @Override
+        public Query convert(String value) throws Exception {
+            return Query.from(value);
+        }
+    }
+
+    /**
+     * Simple converter that delegates to Issue.from().
+     */
+    private static class IssueConverter implements CommandLine.ITypeConverter<Issue> {
+        @Override
+        public Issue convert(String value) throws Exception {
+            return Issue.from(value);
+        }
+    }
+
+    /**
+     * Simple converter that delegates to Severity.from().
+     */
+    private static class SeverityConverter implements CommandLine.ITypeConverter<Severity> {
+        @Override
+        public Severity convert(String value) throws Exception {
+            return Severity.from(value);
+        }
+    }
+
+    /**
+     * Simple converter that delegates to Status.from().
+     */
+    private static class StatusConverter implements CommandLine.ITypeConverter<Status> {
+        @Override
+        public Status convert(String value) throws Exception {
+            return Status.from(value);
+        }
+    }
 
     @CommandLine.Option(
-        names = {"--hotspots"},
-        description = "Get security hotspots",
-        defaultValue = "false"
+        names = { "--types", "-t" },
+        description = "Issue type: ${COMPLETION-CANDIDATES}",
+        required = false,
+        converter = IssueConverter.class
     )
-    private boolean hotspots;
+    private Issue types;
+
+    @CommandLine.Option(
+        names = { "--severity", "-s" },
+        description = "Issue severity: ${COMPLETION-CANDIDATES}",
+        required = false,
+        converter = SeverityConverter.class
+    )
+    private Severity severity;
+
+    @CommandLine.Option(
+        names = { "--status" },
+        description = "Issue status: ${COMPLETION-CANDIDATES}",
+        required = false,
+        converter = StatusConverter.class
+    )
+    private Status status;
+
+    @CommandLine.Option(
+        names = { "--size" },
+        description = "Page size (number of results per page). Valid range: 1-500. Default: 100",
+        required = false,
+        defaultValue = "100"
+    )
+    private Integer size;
+
+    @CommandLine.Option(
+        names = { "--detail" },
+        description = "Issue key-id to get detailed information about a specific issue",
+        required = false
+    )
+    private String detail;
 
     // Dependencies
     private final SonarApiKeyResolver apiKeyResolver;
-    private final SonarHttpClient sonarHttpClient;
+    private final SonarService sonarService;
 
     /**
      * Default constructor that initializes all dependencies.
      */
     public SonarSearchCLI() {
         this.apiKeyResolver = new SonarApiKeyResolver();
-        this.sonarHttpClient = new SonarHttpClient();
+        this.sonarService = new SonarService();
     }
 
     /**
      * Constructor for testing that accepts all dependencies.
      */
-    SonarSearchCLI(SonarApiKeyResolver apiKeyResolver, SonarHttpClient sonarHttpClient) {
+    SonarSearchCLI(SonarApiKeyResolver apiKeyResolver, SonarService sonarService) {
         this.apiKeyResolver = apiKeyResolver;
-        this.sonarHttpClient = sonarHttpClient;
+        this.sonarService = sonarService;
     }
 
     @Override
     public void run() {
         try {
-            // Validate that either issues or hotspots is selected, but not both
-            if (hotspots && type != null) {
-                throw new RuntimeException("Cannot use --hotspots with --issues. Choose either --hotspots or --issues");
+            // Validate that --query is provided
+            if (query == null) {
+                throw new RuntimeException("Must provide --query");
             }
-            if (!hotspots && type == null) {
-                throw new RuntimeException("Must provide either --issues (with type) or --hotspots");
+
+            // Validate --detail usage
+            if (detail != null) {
+                // When using --detail, --query is required and --types, --severity, --status are not allowed
+                if (types != null || severity != null || status != null) {
+                    throw new RuntimeException("--detail cannot be used with --types, --severity, or --status");
+                }
+            } else {
+                // When not using --detail, --project is required
+                if (projectKey == null) {
+                    throw new RuntimeException("Must provide --project when not using --detail");
+                }
+                // Validate that --types is provided when --query is ISSUES
+                if (query == Query.ISSUES && types == null) {
+                    throw new RuntimeException("Must provide --types when --query is ISSUES");
+                }
             }
-            // If issues mode (type != null), type is required (enforced by enum when --issues is provided)
+
+            // Validate --size is in valid range (1-500)
+            if (size < 1 || size > 500) {
+                throw new RuntimeException("--size must be between 1 and 500");
+            }
 
             String apiKey = apiKeyResolver.resolveApiKey();
-            boolean tokenValid = sonarHttpClient.validateToken(apiKey);
+            boolean tokenValid = sonarService.validateToken(apiKey);
             if (!tokenValid) {
                 throw new RuntimeException("SONAR_TOKEN validation failed");
             }
@@ -102,10 +196,20 @@ public class SonarSearchCLI implements Runnable {
             }
 
             String response;
-            if (hotspots) {
-                response = sonarHttpClient.getHotspots(apiKey, projectKey);
+            if (detail != null) {
+                // Use --detail with --query to get issue or hotspot details by key-id
+                if (query == Query.ISSUES) {
+                    response = sonarService.searchIssueDetail(detail, apiKey);
+                } else if (query == Query.HOTSPOTS) {
+                    response = sonarService.searchHotspotDetail(detail, apiKey);
+                } else {
+                    throw new RuntimeException("--detail is only supported with --query ISSUES or HOTSPOTS");
+                }
+            } else if (query == Query.HOTSPOTS) {
+                response = sonarService.searchHotspots(projectKey, apiKey);
             } else {
-                response = sonarHttpClient.getIssues(apiKey, projectKey, type);
+                // For ISSUES, use the --types value and optional --severity, --status, and --size
+                response = sonarService.searchIssues(projectKey, types, severity, status, size, apiKey);
             }
 
             // Pretty-print JSON
