@@ -57,12 +57,11 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should throw exception when API key is not found")
     void shouldThrowExceptionWhenApiKeyIsNotFound() {
+        // Given
         // Note: This test may not work in all environments due to environment variable limitations
         // In a real CI/CD environment, you would set the environment variable externally
         // For now, we'll test the error case when no API key is found
         clearEnvironmentVariable();
-
-        // Test that exception is thrown when no API key is found
         SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
         // When & Then
@@ -74,7 +73,7 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should resolve API key from .env file")
     void shouldResolveApiKeyFromEnvFile() throws IOException {
-        // Create .env file in the current working directory (project root)
+        // Given
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
@@ -83,8 +82,6 @@ class SonarApiKeyResolverTest {
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("SONAR_TOKEN=env-file-key-789");
             }
-
-            // Test resolution
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When
@@ -103,7 +100,7 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should trim whitespace from API key in .env file")
     void shouldTrimWhitespaceFromApiKeyInEnvFile() throws IOException {
-        // Create .env file in the current working directory (project root)
+        // Given
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
@@ -112,8 +109,6 @@ class SonarApiKeyResolverTest {
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("SONAR_TOKEN=  env-file-key-whitespace  ");
             }
-
-            // Test resolution - should trim whitespace
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When
@@ -132,11 +127,9 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should prioritize .env file over system environment")
     void shouldPrioritizeEnvFileOverSystemEnvironment() throws IOException {
-        // Test that .env file takes priority over system environment
+        // Given
         // Note: This test focuses on .env file functionality since environment variable
         // manipulation in tests is complex and environment-dependent
-
-        // Create .env file in the current working directory (project root)
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
@@ -145,8 +138,6 @@ class SonarApiKeyResolverTest {
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("SONAR_TOKEN=env-file-key");
             }
-
-            // Test resolution - .env file should be used
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When
@@ -165,10 +156,8 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should throw exception when API key is not found")
     void shouldThrowExceptionWhenApiKeyIsNotFoundInAnySource() {
-        // Ensure no API key is set
+        // Given
         clearEnvironmentVariable();
-
-        // Test that exception is thrown
         SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
         // When & Then
@@ -181,11 +170,9 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should throw exception when API key is empty in system environment")
     void shouldThrowExceptionWhenApiKeyIsEmptyInSystemEnvironment() {
-        // Test that empty environment variable causes exception
+        // Given
         // Note: This test may not work in all environments due to environment variable limitations
         clearEnvironmentVariable();
-
-        // Test that exception is thrown
         SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
         // When & Then
@@ -197,7 +184,7 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should throw exception when API key is empty in .env file")
     void shouldThrowExceptionWhenApiKeyIsEmptyInEnvFile() throws IOException {
-        // Create .env file in the current working directory (project root)
+        // Given
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
@@ -206,8 +193,6 @@ class SonarApiKeyResolverTest {
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("SONAR_TOKEN=");
             }
-
-            // Test that exception is thrown
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When & Then
@@ -225,7 +210,7 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should throw exception when API key is whitespace-only in .env file")
     void shouldThrowExceptionWhenApiKeyIsWhitespaceOnlyInEnvFile() throws IOException {
-        // Create .env file in the current working directory (project root)
+        // Given
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
@@ -234,8 +219,6 @@ class SonarApiKeyResolverTest {
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("SONAR_TOKEN=   ");
             }
-
-            // Test that exception is thrown
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When & Then
@@ -253,7 +236,7 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should throw exception when .env file is malformed")
     void shouldThrowExceptionWhenEnvFileIsMalformed() throws IOException {
-        // Create .env file in the current working directory (project root)
+        // Given
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
@@ -262,8 +245,6 @@ class SonarApiKeyResolverTest {
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("invalid-env-file-content");
             }
-
-            // Test resolution - should throw exception since no valid API key is found
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When & Then
@@ -281,7 +262,7 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should throw exception when .env file is missing")
     void shouldThrowExceptionWhenEnvFileIsMissing() {
-        // Test resolution when no .env file exists - should throw exception since no API key is found
+        // Given
         SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
         // When & Then
@@ -293,7 +274,7 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should throw exception when .env file exists but missing SONAR_TOKEN")
     void shouldThrowExceptionWhenEnvFileExistsButMissingKey() throws IOException {
-        // Create .env file in the current working directory (project root)
+        // Given
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
@@ -302,8 +283,6 @@ class SonarApiKeyResolverTest {
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("OTHER_KEY=some-value");
             }
-
-            // Test resolution - should throw exception since no API key is found
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When & Then
@@ -321,7 +300,7 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should have correct SONAR_TOKEN constant")
     void shouldHaveCorrectCursorApiKeyConstant() {
-        // Then
+        // Given & When & Then
         assertThat(SonarApiKeyResolver.SONAR_TOKEN).isEqualTo("SONAR_TOKEN");
     }
 
@@ -338,18 +317,16 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should resolve API key with special characters from .env file")
     void shouldResolveApiKeyWithSpecialCharacters() throws IOException {
-        // Create .env file in the current working directory (project root)
+        // Given
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
         try {
-            // Test with special characters in API key via .env file
             // Note: Using simpler special characters that work well with .env format
             String testApiKey = "test-key-with-special-chars-123-abc";
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("SONAR_TOKEN=" + testApiKey);
             }
-
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When
@@ -368,17 +345,15 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should resolve very long API key from .env file")
     void shouldResolveVeryLongApiKey() throws IOException {
-        // Create .env file in the current working directory (project root)
+        // Given
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
         try {
-            // Test with very long API key via .env file
             String testApiKey = "a".repeat(1000);
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("SONAR_TOKEN=" + testApiKey);
             }
-
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When
@@ -397,17 +372,15 @@ class SonarApiKeyResolverTest {
     @Test
     @DisplayName("Should resolve API key with Unicode characters from .env file")
     void shouldResolveApiKeyWithUnicodeCharacters() throws IOException {
-        // Create .env file in the current working directory (project root)
+        // Given
         File projectRoot = new File(System.getProperty("user.dir"));
         File envFile = new File(projectRoot, ".env");
 
         try {
-            // Test with Unicode characters via .env file
             String testApiKey = "test-key-with-unicode-🚀-测试-αβγ";
             try (FileWriter writer = new FileWriter(envFile)) {
                 writer.write("SONAR_TOKEN=" + testApiKey);
             }
-
             SonarApiKeyResolver resolver = new SonarApiKeyResolver();
 
             // When

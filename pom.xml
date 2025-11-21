@@ -4,12 +4,20 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>info.jab.sonar</groupId>
+    <groupId>info.jab.cli</groupId>
     <artifactId>sonar-search</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 
     <name>sonar-search</name>
     <url>https://github.com/jabrena/sonar-search-cli</url>
+
+    <developers>
+        <developer>
+            <id>jabrena</id>
+            <name>Juan Antonio Breña Moral</name>
+            <email>bren@juanantonio.info</email>
+        </developer>
+    </developers>
 
     <properties>
         <!-- Core build properties -->
