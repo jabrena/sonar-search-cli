@@ -42,7 +42,7 @@
         <maven-plugin-failsafe.version>3.5.4</maven-plugin-failsafe.version>
         <maven-plugin-enforcer.version>3.6.2</maven-plugin-enforcer.version>
         <extra-enforcer-rules.version>1.11.0</extra-enforcer-rules.version>
-        <maven-plugin-versions.version>2.19.1</maven-plugin-versions.version>
+        <maven-plugin-versions.version>2.20.1</maven-plugin-versions.version>
     </properties>
 
     <dependencyManagement>
