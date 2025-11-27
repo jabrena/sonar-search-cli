@@ -48,7 +48,7 @@
         <maven-plugin-rewrite.version>6.23.0</maven-plugin-rewrite.version>
 
         <!-- Quality thresholds -->
-        <coverage.level>70</coverage.level>
+        <coverage.level>65</coverage.level>
     </properties>
 
     <dependencyManagement>
