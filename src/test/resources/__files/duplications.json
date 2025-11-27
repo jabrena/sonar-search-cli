@@ -1,0 +1,45 @@
+{
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 100,
+    "total": 2
+  },
+  "baseComponent": {
+    "key": "jabrena_churrera-cli",
+    "name": "Churrera CLI",
+    "qualifier": "TRK",
+    "measures": [
+      {
+        "metric": "duplicated_lines_density",
+        "value": "5.2"
+      }
+    ]
+  },
+  "components": [
+    {
+      "key": "jabrena_churrera-cli:src/main/java/info/jab/churrera/cli/Example.java",
+      "name": "Example.java",
+      "qualifier": "FIL",
+      "path": "src/main/java/info/jab/churrera/cli/Example.java",
+      "measures": [
+        {
+          "metric": "duplicated_lines_density",
+          "value": "10.5"
+        }
+      ]
+    },
+    {
+      "key": "jabrena_churrera-cli:src/main/java/info/jab/churrera/cli/AnotherExample.java",
+      "name": "AnotherExample.java",
+      "qualifier": "FIL",
+      "path": "src/main/java/info/jab/churrera/cli/AnotherExample.java",
+      "measures": [
+        {
+          "metric": "duplicated_lines_density",
+          "value": "3.1"
+        }
+      ]
+    }
+  ]
+}
+

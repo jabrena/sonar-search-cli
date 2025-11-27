@@ -36,7 +36,7 @@ Can you update the current changelog for 0.2.0 comparing git commits in relation
 
 ## Tagging process
 git tag --list
-git tag 0.1.0
+git tag 0.2.0-SNAPSHOT
 git push --tags
 
 # Update Snapshot

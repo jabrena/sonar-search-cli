@@ -5,7 +5,8 @@ package info.jab.sonar.cli.model;
  */
 public enum Query {
     ISSUES,
-    HOTSPOTS;
+    HOTSPOTS,
+    DUPLICATIONS;
 
     /**
      * Factory method to create Query from a string value.

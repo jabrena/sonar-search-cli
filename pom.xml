@@ -43,6 +43,12 @@
         <maven-plugin-enforcer.version>3.6.2</maven-plugin-enforcer.version>
         <extra-enforcer-rules.version>1.11.0</extra-enforcer-rules.version>
         <maven-plugin-versions.version>2.20.1</maven-plugin-versions.version>
+        <maven-plugin-jacoco.version>0.8.13</maven-plugin-jacoco.version>
+        <maven-plugin-sonar.version>4.0.0.4121</maven-plugin-sonar.version>
+        <maven-plugin-rewrite.version>6.23.0</maven-plugin-rewrite.version>
+
+        <!-- Quality thresholds -->
+        <coverage.level>65</coverage.level>
     </properties>
 
     <dependencyManagement>
@@ -237,6 +243,129 @@
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>${maven-plugin-versions.version}</version>
             </plugin>
+
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <version>${maven-plugin-rewrite.version}</version>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>org.openrewrite.java.RemoveUnusedImports</recipe>
+                    </activeRecipes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>prepare-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jacoco</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${maven-plugin-jacoco.version}</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>check</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <rule>
+                                            <element>BUNDLE</element>
+                                            <limits>
+                                                <limit>
+                                                    <counter>LINE</counter>
+                                                    <value>COVEREDRATIO</value>
+                                                    <minimum>${coverage.level}%</minimum>
+                                                </limit>
+                                                <limit>
+                                                    <counter>BRANCH</counter>
+                                                    <value>COVEREDRATIO</value>
+                                                    <minimum>${coverage.level}%</minimum>
+                                                </limit>
+                                                <limit>
+                                                    <counter>METHOD</counter>
+                                                    <value>COVEREDRATIO</value>
+                                                    <minimum>${coverage.level}%</minimum>
+                                                </limit>
+                                                <limit>
+                                                    <counter>CLASS</counter>
+                                                    <value>COVEREDRATIO</value>
+                                                    <minimum>${coverage.level}%</minimum>
+                                                </limit>
+                                                <limit>
+                                                    <counter>INSTRUCTION</counter>
+                                                    <value>COVEREDRATIO</value>
+                                                    <minimum>${coverage.level}%</minimum>
+                                                </limit>
+                                                <limit>
+                                                    <counter>COMPLEXITY</counter>
+                                                    <value>COVEREDRATIO</value>
+                                                    <minimum>${coverage.level}%</minimum>
+                                                </limit>
+                                            </limits>
+                                        </rule>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>sonar</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <!-- SonarCloud configuration -->
+                <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+                <sonar.organization>jabrena</sonar.organization>
+                <sonar.projectKey>jabrena_sonar-search-cli</sonar.projectKey>
+                <sonar.projectName>Sonar Search CLI</sonar.projectName>
+                <sonar.projectVersion>${project.version}</sonar.projectVersion>
+                <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+                <sonar.java.source>${java.version}</sonar.java.source>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonarsource.scanner.maven</groupId>
+                        <artifactId>sonar-maven-plugin</artifactId>
+                        <version>${maven-plugin-sonar.version}</version>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
