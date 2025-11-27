@@ -13,7 +13,8 @@ import java.net.http.HttpClient;
 import java.net.URI;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for SonarHttpClient using WireMock.

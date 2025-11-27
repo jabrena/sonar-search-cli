@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test;
 import java.net.http.HttpClient;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for SonarService using WireMock.
@@ -458,6 +459,281 @@ class SonarServiceTest {
             .hasMessageContaining("HTTP 404");
         verify(getRequestedFor(urlPathEqualTo("/api/hotspots/show"))
             .withQueryParam("key", equalTo(hotspotKey)));
+    }
+
+    @Test
+    @DisplayName("should search duplications successfully")
+    void searchDuplications_validProjectKey_returnsValidResponse() throws Exception {
+        // Given
+        String projectKey = "jabrena_churrera-cli";
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/measures/component_tree"))
+            .withQueryParam("component", equalTo(projectKey))
+            .withQueryParam("metricKeys", equalTo("duplicated_lines_density"))
+            .withQueryParam("strategy", equalTo("leaves"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBodyFile("duplications.json")));
+
+        // When
+        String result = sonarService.searchDuplications(projectKey, apiKey);
+
+        // Then
+        assertThat(result)
+            .isNotNull()
+            .contains("\"duplicated_lines_density\"")
+            .contains("\"components\"")
+            .contains("\"baseComponent\"");
+        verify(getRequestedFor(urlPathEqualTo("/api/measures/component_tree"))
+            .withQueryParam("component", equalTo(projectKey))
+            .withQueryParam("metricKeys", equalTo("duplicated_lines_density"))
+            .withQueryParam("strategy", equalTo("leaves")));
+    }
+
+    @Test
+    @DisplayName("should throw exception when duplications search returns HTTP error")
+    void searchDuplications_httpError_throwsRuntimeException() {
+        // Given
+        String projectKey = "jabrena_churrera-cli";
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/measures/component_tree"))
+            .withQueryParam("component", equalTo(projectKey))
+            .withQueryParam("metricKeys", equalTo("duplicated_lines_density"))
+            .withQueryParam("strategy", equalTo("leaves"))
+            .willReturn(aResponse()
+                .withStatus(404)
+                .withBody("Project not found")));
+
+        // When & Then
+        assertThatThrownBy(() -> sonarService.searchDuplications(projectKey, apiKey))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessageContaining("HTTP 404");
+        verify(getRequestedFor(urlPathEqualTo("/api/measures/component_tree"))
+            .withQueryParam("component", equalTo(projectKey))
+            .withQueryParam("metricKeys", equalTo("duplicated_lines_density"))
+            .withQueryParam("strategy", equalTo("leaves")));
+    }
+
+    @Test
+    @DisplayName("should return true when validation response has null body and status 200")
+    void validateToken_nullBodyStatus200_returnsTrue() throws Exception {
+        // Given
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withBody("")));
+
+        // When
+        boolean result = sonarService.validateToken(apiKey);
+
+        // Then
+        assertThat(result).isTrue();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    @DisplayName("should return false when validation response has null body and status 401")
+    void validateToken_nullBodyStatus401_returnsFalse() throws Exception {
+        // Given
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(401)
+                .withBody("")));
+
+        // When
+        boolean result = sonarService.validateToken(apiKey);
+
+        // Then
+        assertThat(result).isFalse();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    @DisplayName("should return true when validation response has blank body and status 200")
+    void validateToken_blankBodyStatus200_returnsTrue() throws Exception {
+        // Given
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withBody("   ")));
+
+        // When
+        boolean result = sonarService.validateToken(apiKey);
+
+        // Then
+        assertThat(result).isTrue();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    @DisplayName("should return false when validation response has blank body and status 401")
+    void validateToken_blankBodyStatus401_returnsFalse() throws Exception {
+        // Given
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(401)
+                .withBody("   ")));
+
+        // When
+        boolean result = sonarService.validateToken(apiKey);
+
+        // Then
+        assertThat(result).isFalse();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    @DisplayName("should return true when validation response has invalid JSON and status 200")
+    void validateToken_invalidJsonStatus200_returnsTrue() throws Exception {
+        // Given
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withBody("invalid json")));
+
+        // When
+        boolean result = sonarService.validateToken(apiKey);
+
+        // Then
+        assertThat(result).isTrue();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    @DisplayName("should return false when validation response has invalid JSON and status 401")
+    void validateToken_invalidJsonStatus401_returnsFalse() throws Exception {
+        // Given
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(401)
+                .withBody("invalid json")));
+
+        // When
+        boolean result = sonarService.validateToken(apiKey);
+
+        // Then
+        assertThat(result).isFalse();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    @DisplayName("should return true when validation response has null valid field and status 200")
+    void validateToken_nullValidFieldStatus200_returnsTrue() throws Exception {
+        // Given
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withBody("{\"valid\": null}")));
+
+        // When
+        boolean result = sonarService.validateToken(apiKey);
+
+        // Then
+        assertThat(result).isTrue();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    @DisplayName("should return false when validation response has null valid field and status 401")
+    void validateToken_nullValidFieldStatus401_returnsFalse() throws Exception {
+        // Given
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(401)
+                .withBody("{\"valid\": null}")));
+
+        // When
+        boolean result = sonarService.validateToken(apiKey);
+
+        // Then
+        assertThat(result).isFalse();
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    @DisplayName("should throw exception when validation returns unexpected status code")
+    void validateToken_unexpectedStatusCode_throwsRuntimeException() {
+        // Given
+        String apiKey = "test-api-key";
+
+        stubFor(get(urlPathEqualTo("/api/authentication/validate"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(500)
+                .withBody("Internal Server Error")));
+
+        // When & Then
+        assertThatThrownBy(() -> sonarService.validateToken(apiKey))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessageContaining("Error validating token: HTTP 500");
+        verify(getRequestedFor(urlPathEqualTo("/api/authentication/validate")));
+    }
+
+    @Test
+    @DisplayName("should search issues with both severity and status filters successfully")
+    void searchIssues_withSeverityAndStatus_returnsValidResponse() throws Exception {
+        // Given
+        String componentKey = "jabrena_churrera-cli";
+        Issue issueType = Issue.BUG;
+        Severity severity = Severity.BLOCKER;
+        Status status = Status.OPEN;
+        String apiKey = "test-api-key";
+        String typesParam = issueType.toApiFormat();
+        String severityParam = severity.toApiFormat();
+        String statusParam = status.toApiFormat();
+
+        stubFor(get(urlPathEqualTo("/api/issues/search"))
+            .withQueryParam("componentKeys", equalTo(componentKey))
+            .withQueryParam("types", equalTo(typesParam))
+            .withQueryParam("severities", equalTo(severityParam))
+            .withQueryParam("statuses", equalTo(statusParam))
+            .withQueryParam("ps", equalTo("100"))
+            .withHeader("Authorization", equalTo("Bearer " + apiKey))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBodyFile("bugs.json")));
+
+        // When
+        String result = sonarService.searchIssues(componentKey, issueType, severity, status, 100, apiKey);
+
+        // Then
+        assertThat(result)
+            .isNotNull()
+            .contains("\"total\": 4");
+        verify(getRequestedFor(urlPathEqualTo("/api/issues/search"))
+            .withQueryParam("componentKeys", equalTo(componentKey))
+            .withQueryParam("types", equalTo(typesParam))
+            .withQueryParam("severities", equalTo(severityParam))
+            .withQueryParam("statuses", equalTo(statusParam)));
     }
 }
 

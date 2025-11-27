@@ -177,6 +177,11 @@ public class SonarSearchCLI implements Runnable {
                 if (query == Query.ISSUES && types == null) {
                     throw new RuntimeException("Must provide --types when --query is ISSUES");
                 }
+                // Validate that --types, --severity, --status are not used with DUPLICATIONS or HOTSPOTS
+                if ((query == Query.DUPLICATIONS || query == Query.HOTSPOTS) &&
+                    (types != null || severity != null || status != null)) {
+                    throw new RuntimeException("--types, --severity, and --status cannot be used with --query DUPLICATIONS or HOTSPOTS");
+                }
             }
 
             // Validate --size is in valid range (1-500)
@@ -207,6 +212,8 @@ public class SonarSearchCLI implements Runnable {
                 }
             } else if (query == Query.HOTSPOTS) {
                 response = sonarService.searchHotspots(projectKey, apiKey);
+            } else if (query == Query.DUPLICATIONS) {
+                response = sonarService.searchDuplications(projectKey, apiKey);
             } else {
                 // For ISSUES, use the --types value and optional --severity, --status, and --size
                 response = sonarService.searchIssues(projectKey, types, severity, status, size, apiKey);

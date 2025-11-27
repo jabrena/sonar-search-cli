@@ -11,7 +11,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Test class for SonarApiKeyResolver utility.
@@ -388,6 +389,114 @@ class SonarApiKeyResolverTest {
 
             // Then
             assertThat(result).isEqualTo(testApiKey);
+        } finally {
+            // Clean up the .env file
+            if (envFile.exists()) {
+                envFile.delete();
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Should resolve API key from system property")
+    void shouldResolveApiKeyFromSystemProperty() {
+        // Given
+        String testApiKey = "system-property-key-123";
+        System.setProperty(SonarApiKeyResolver.SONAR_TOKEN, testApiKey);
+        SonarApiKeyResolver resolver = new SonarApiKeyResolver();
+
+        try {
+            // When
+            String result = resolver.resolveApiKey();
+
+            // Then
+            assertThat(result).isEqualTo(testApiKey);
+        } finally {
+            System.clearProperty(SonarApiKeyResolver.SONAR_TOKEN);
+        }
+    }
+
+    @Test
+    @DisplayName("Should trim whitespace from API key in system property")
+    void shouldTrimWhitespaceFromApiKeyInSystemProperty() {
+        // Given
+        String testApiKey = "  system-property-key-whitespace  ";
+        System.setProperty(SonarApiKeyResolver.SONAR_TOKEN, testApiKey);
+        SonarApiKeyResolver resolver = new SonarApiKeyResolver();
+
+        try {
+            // When
+            String result = resolver.resolveApiKey();
+
+            // Then
+            assertThat(result).isEqualTo("system-property-key-whitespace");
+        } finally {
+            System.clearProperty(SonarApiKeyResolver.SONAR_TOKEN);
+        }
+    }
+
+    @Test
+    @DisplayName("Should throw exception when system property is empty")
+    void shouldThrowExceptionWhenSystemPropertyIsEmpty() {
+        // Given
+        System.setProperty(SonarApiKeyResolver.SONAR_TOKEN, "");
+        SonarApiKeyResolver resolver = new SonarApiKeyResolver();
+
+        try {
+            // When & Then
+            assertThatThrownBy(resolver::resolveApiKey)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("API key not found");
+        } finally {
+            System.clearProperty(SonarApiKeyResolver.SONAR_TOKEN);
+        }
+    }
+
+    @Test
+    @DisplayName("Should throw exception when system property is whitespace-only")
+    void shouldThrowExceptionWhenSystemPropertyIsWhitespaceOnly() {
+        // Given
+        System.setProperty(SonarApiKeyResolver.SONAR_TOKEN, "   ");
+        SonarApiKeyResolver resolver = new SonarApiKeyResolver();
+
+        try {
+            // When & Then
+            assertThatThrownBy(resolver::resolveApiKey)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("API key not found");
+        } finally {
+            System.clearProperty(SonarApiKeyResolver.SONAR_TOKEN);
+        }
+    }
+
+    @Test
+    @DisplayName("Should prioritize .env file over system property")
+    void shouldPrioritizeEnvFileOverSystemProperty() throws IOException {
+        // Given
+        File projectRoot = new File(System.getProperty("user.dir"));
+        File envFile = new File(projectRoot, ".env");
+
+        try {
+            // Create .env file (should take priority)
+            String envFileKey = "env-file-key";
+            try (FileWriter writer = new FileWriter(envFile)) {
+                writer.write("SONAR_TOKEN=" + envFileKey);
+            }
+
+            // Set system property
+            String systemPropertyKey = "system-property-key";
+            System.setProperty(SonarApiKeyResolver.SONAR_TOKEN, systemPropertyKey);
+            SonarApiKeyResolver resolver = new SonarApiKeyResolver();
+
+            try {
+                // When
+                String result = resolver.resolveApiKey();
+
+                // Then - .env file should take priority
+                assertThat(result).isEqualTo(envFileKey);
+            } finally {
+                System.clearProperty(SonarApiKeyResolver.SONAR_TOKEN);
+            }
         } finally {
             // Clean up the .env file
             if (envFile.exists()) {

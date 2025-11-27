@@ -66,6 +66,19 @@ public class SonarService {
     }
 
     /**
+     * Searches for duplications in SonarCloud.
+     *
+     * @param projectKey The project key to search for
+     * @param apiKey The SonarCloud API key
+     * @return The JSON response body as a string
+     * @throws Exception if the request fails or returns a non-200 status code
+     */
+    public String searchDuplications(String projectKey, String apiKey) throws Exception {
+        URI uri = buildDuplicationsSearchUrl(projectKey);
+        return httpClient.get(uri, apiKey);
+    }
+
+    /**
      * Searches for a specific issue by its key-id in SonarCloud.
      *
      * @param issueKey The issue key-id to search for
@@ -208,6 +221,18 @@ public class SonarService {
     private URI buildHotspotDetailUrl(String hotspotKey) {
         String url = String.format("%s/api/hotspots/show?key=%s",
             baseUrl, hotspotKey);
+        return URI.create(url);
+    }
+
+    /**
+     * Builds the URL for searching duplications in SonarCloud.
+     *
+     * @param projectKey The project key to search for
+     * @return The complete URI for the duplications search endpoint
+     */
+    private URI buildDuplicationsSearchUrl(String projectKey) {
+        String url = String.format("%s/api/measures/component_tree?component=%s&metricKeys=duplicated_lines_density&strategy=leaves",
+            baseUrl, projectKey);
         return URI.create(url);
     }
 }
